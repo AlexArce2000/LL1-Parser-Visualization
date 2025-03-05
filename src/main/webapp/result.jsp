@@ -1,58 +1,58 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.List" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Resultado del Análisis LL(1)</title>
+    <title>Resultados del An�lisis LL(1)</title>
 </head>
 <body>
-<h1>Resultado del Análisis LL(1)</h1>
+<h1>Resultados del An�lisis LL(1)</h1>
 
-<h2>Conjunto FIRST</h2>
-<table border="1">
-    <tr><th>No Terminal</th><th>FIRST</th></tr>
-    <%
-        Map<String, Set<String>> firstSets = (Map<String, Set<String>>) request.getAttribute("firstSets");
-        for (Map.Entry<String, Set<String>> entry : firstSets.entrySet()) {
-    %>
-    <tr>
-        <td><%= entry.getKey() %></td>
-        <td><%= entry.getValue() %></td>
-    </tr>
-    <% } %>
-</table>
+<h2>Gram�tica:</h2>
+<pre>
+<%
+    Map<String, List<String>> grammar = (Map<String, List<String>>) request.getAttribute("grammar");
+    for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
+        out.println(entry.getKey() + " -> " + String.join(" | ", entry.getValue()));
+    }
+%>
+</pre>
 
-<h2>Conjunto FOLLOW</h2>
-<table border="1">
-    <tr><th>No Terminal</th><th>FOLLOW</th></tr>
-    <%
-        Map<String, Set<String>> followSets = (Map<String, Set<String>>) request.getAttribute("followSets");
-        for (Map.Entry<String, Set<String>> entry : followSets.entrySet()) {
-    %>
-    <tr>
-        <td><%= entry.getKey() %></td>
-        <td><%= entry.getValue() %></td>
-    </tr>
-    <% } %>
-</table>
+<h2>Conjuntos First:</h2>
+<pre>
+<%
+    Map<String, Set<String>> firstSets = (Map<String, Set<String>>) request.getAttribute("firstSets");
+    for (Map.Entry<String, Set<String>> entry : firstSets.entrySet()) {
+        out.println("First(" + entry.getKey() + ") = " + entry.getValue());
+    }
+%>
+</pre>
 
-<h2>Tabla de Análisis M</h2>
-<table border="1">
-    <tr><th>Estado</th><th>Símbolo</th><th>Producción</th></tr>
-    <%
-        Map<String, Map<String, String>> parsingTable = (Map<String, Map<String, String>>) request.getAttribute("parsingTable");
-        for (Map.Entry<String, Map<String, String>> entry : parsingTable.entrySet()) {
-            for (Map.Entry<String, String> innerEntry : entry.getValue().entrySet()) {
-    %>
-    <tr>
-        <td><%= entry.getKey() %></td>
-        <td><%= innerEntry.getKey() %></td>
-        <td><%= innerEntry.getValue() %></td>
-    </tr>
-    <% } } %>
-</table>
+<h2>Conjuntos Follow:</h2>
+<pre>
+<%
+    Map<String, Set<String>> followSets = (Map<String, Set<String>>) request.getAttribute("followSets");
+    for (Map.Entry<String, Set<String>> entry : followSets.entrySet()) {
+        out.println("Follow(" + entry.getKey() + ") = " + entry.getValue());
+    }
+%>
+</pre>
+
+<h2>Tabla de An�lisis LL(1):</h2>
+<pre>
+<%
+    Map<String, Map<String, String>> parsingTable = (Map<String, Map<String, String>>) request.getAttribute("parsingTable");
+    for (Map.Entry<String, Map<String, String>> entry : parsingTable.entrySet()) {
+        out.println("No Terminal: " + entry.getKey());
+        for (Map.Entry<String, String> tableEntry : entry.getValue().entrySet()) {
+            out.println("  " + tableEntry.getKey() + " -> " + tableEntry.getValue());
+        }
+    }
+%>
+</pre>
 
 </body>
 </html>
