@@ -7,66 +7,64 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+
 import java.io.*;
 import java.util.*;
 
 @WebServlet("/parseGrammar")
 public class LL1ParserServlet extends HttpServlet {
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Recuperar los datos del formulario
-        String startSymbol = request.getParameter("startSymbol");
+        // Obtener las producciones del formulario
         String productionsInput = request.getParameter("productions");
+        String[] productions = productionsInput.split("\n");
 
-        // Parsear las producciones
-        String[] productionsArray = productionsInput.split("\\n");
+        // Procesar la gramática
+        Map<String, Set<String>> firstSets = calculateFirstSets(productions);
+        Map<String, Set<String>> followSets = calculateFollowSets(productions, firstSets);
+        Map<String, Map<String, String>> parsingTable = createParsingTable(productions, firstSets, followSets);
 
-        // Crear una lista para las producciones
-        List<Production> productions = new ArrayList<>();
-        for (String production : productionsArray) {
-            String[] parts = production.split("->");
-            if (parts.length == 2) {
-                String leftSide = parts[0].trim();
-                String rightSide = parts[1].trim();
-                productions.add(new Production(leftSide, rightSide));
-            }
-        }
-
-        // Crear la gramática
-        Grammar grammar = new Grammar();
-        grammar.setStartSymbol(startSymbol);
-        grammar.setProductions(productions);
-
-        // Calcular los conjuntos FIRST y FOLLOW
-        FirstFollowCalcular calculator = new FirstFollowCalcular();
-        Map<String, Set<String>> firstSets = calculator.calculateFirst(grammar);
-        Map<String, Set<String>> followSets = calculator.calculateFollow(grammar, firstSets);
-
-        // Crear el parser LL(1)
-        LL1Parser parser = new LL1Parser(grammar, firstSets, followSets);
-
-        // Analizar una cadena de ejemplo (o recibirla también como parámetro si lo prefieres)
-        String inputString = request.getParameter("inputString"); // Cadena a analizar
-        if (inputString == null || inputString.isEmpty()) {
-            inputString = "T + T * T"; // Valor por defecto
-        }
-
-        boolean result = parser.parseInputString(inputString);
-
-        // Establecer los resultados en el contexto de la solicitud
+        // Enviar los resultados al cliente
         request.setAttribute("firstSets", firstSets);
         request.setAttribute("followSets", followSets);
-        request.setAttribute("parsingTable", parser.getParsingTable());
-        request.setAttribute("result", result ? "válida" : "inválida");
-        request.setAttribute("inputString", inputString);
+        request.setAttribute("parsingTable", parsingTable);
 
-        // Redirigir a la página de resultados
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/parse.jsp");
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/result.jsp");
         dispatcher.forward(request, response);
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Redirigir a la página de inicio si el método es GET
-        response.sendRedirect("index.jsp");
+    // Método para calcular el conjunto FIRST
+    private Map<String, Set<String>> calculateFirstSets(String[] productions) {
+        Map<String, Set<String>> firstSets = new HashMap<>();
+        // Procesar la gramática y calcular el conjunto FIRST
+        // Este es un ejemplo simplificado, debes manejar todas las reglas correctamente
+        for (String production : productions) {
+            String[] parts = production.split("->");
+            String left = parts[0].trim();
+            String right = parts[1].trim();
+
+            Set<String> firstSet = firstSets.computeIfAbsent(left, k -> new HashSet<>());
+            // Aquí se necesita lógica adicional para analizar las producciones y calcular FIRST
+            // Esto es solo un esquema, se debe completar adecuadamente
+        }
+        return firstSets;
+    }
+
+    // Método para calcular el conjunto FOLLOW
+    private Map<String, Set<String>> calculateFollowSets(String[] productions, Map<String, Set<String>> firstSets) {
+        Map<String, Set<String>> followSets = new HashMap<>();
+        // Lógica para calcular el conjunto FOLLOW
+        // Esto es solo un esquema
+        return followSets;
+    }
+
+    // Méodo para crear la tabla de análisis M
+    private Map<String, Map<String, String>> createParsingTable(String[] productions,
+                                                                Map<String, Set<String>> firstSets, Map<String, Set<String>> followSets) {
+
+        Map<String, Map<String, String>> parsingTable = new HashMap<>();
+        // Lógica para crear la tabla M basándose en las producciones, FIRST y FOLLOW
+        return parsingTable;
     }
 }
