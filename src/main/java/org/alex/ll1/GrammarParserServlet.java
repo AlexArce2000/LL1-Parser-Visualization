@@ -36,9 +36,66 @@ public class GrammarParserServlet extends HttpServlet {
         request.setAttribute("parsingTable", parsingTable);
 
         // Redirigir a la página de resultados
-        request.getRequestDispatcher("/results.jsp").forward(request, response);
+        request.getRequestDispatcher("/result.jsp").forward(request, response);
     }
+    private Map<String, Set<String>> calculateFollowSets(Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
+        Map<String, Set<String>> followSets = new HashMap<>();
 
+        // Inicializar Follow para todos los no terminales
+        for (String nonTerminal : grammar.keySet()) {
+            followSets.put(nonTerminal, new HashSet<>());
+        }
+
+        // El símbolo inicial tiene $ en su Follow
+        String startSymbol = grammar.keySet().iterator().next();
+        followSets.get(startSymbol).add("$");
+
+        // Calcular Follow recursivamente
+        boolean changed;
+        do {
+            changed = false;
+            for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
+                String nonTerminal = entry.getKey();
+                for (String production : entry.getValue()) {
+                    String[] symbols = production.split("\\s+");
+                    for (int i = 0; i < symbols.length; i++) {
+                        if (grammar.containsKey(symbols[i])) {
+                            // Calcular Follow para el no terminal symbols[i]
+                            Set<String> firstOfNext = new HashSet<>();
+                            if (i < symbols.length - 1) {
+                                // Calcular First de los símbolos siguientes
+                                for (int j = i + 1; j < symbols.length; j++) {
+                                    if (grammar.containsKey(symbols[j])) {
+                                        firstOfNext.addAll(firstSets.get(symbols[j]));
+                                        if (!firstSets.get(symbols[j]).contains("ε")) {
+                                            break;
+                                        }
+                                    } else {
+                                        firstOfNext.add(symbols[j]);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Agregar First de los siguientes símbolos al Follow actual
+                            if (followSets.get(symbols[i]).addAll(firstOfNext)) {
+                                changed = true;
+                            }
+
+                            // Si hay un ε en First de los siguientes símbolos, agregar Follow del no terminal actual
+                            if (i == symbols.length - 1 || firstOfNext.contains("ε")) {
+                                if (followSets.get(symbols[i]).addAll(followSets.get(nonTerminal))) {
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } while (changed);
+
+        return followSets;
+    }
     private Map<String, List<String>> parseGrammar(String[] productions) {
         Map<String, List<String>> grammar = new HashMap<>();
         for (String production : productions) {
@@ -52,14 +109,53 @@ public class GrammarParserServlet extends HttpServlet {
         }
         return grammar;
     }
-
     private Map<String, Set<String>> calculateFirstSets(Map<String, List<String>> grammar) {
         Map<String, Set<String>> firstSets = new HashMap<>();
+
+        // Inicializar First para todos los no terminales
         for (String nonTerminal : grammar.keySet()) {
-            calculateFirst(nonTerminal, grammar, firstSets);
+            firstSets.put(nonTerminal, new HashSet<>());
         }
+
+        // Calcular First recursivamente
+        boolean changed;
+        do {
+            changed = false;
+            for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
+                String nonTerminal = entry.getKey();
+                for (String production : entry.getValue()) {
+                    Set<String> firstOfProduction = calculateFirstOfProduction(production, grammar, firstSets);
+                    if (firstSets.get(nonTerminal).addAll(firstOfProduction)) {
+                        changed = true;
+                    }
+                }
+            }
+        } while (changed);
+
         return firstSets;
     }
+
+    private Set<String> calculateFirstOfProduction(String production, Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
+        Set<String> first = new HashSet<>();
+        String[] symbols = production.split("\\s+");
+
+        for (String symbol : symbols) {
+            if (grammar.containsKey(symbol)) {
+                // Es un no terminal
+                first.addAll(firstSets.get(symbol));
+                if (!firstSets.get(symbol).contains("ε")) {
+                    break;
+                }
+            } else {
+                // Es un terminal
+                first.add(symbol);
+                break;
+            }
+        }
+
+        return first;
+    }
+
 
     private Set<String> calculateFirst(String symbol, Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
         if (firstSets.containsKey(symbol)) {
@@ -86,17 +182,6 @@ public class GrammarParserServlet extends HttpServlet {
         return first;
     }
 
-    private Map<String, Set<String>> calculateFollowSets(Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
-        Map<String, Set<String>> followSets = new HashMap<>();
-        String startSymbol = grammar.keySet().iterator().next();
-        followSets.put(startSymbol, new HashSet<>(Collections.singleton("$")));
-
-        for (String nonTerminal : grammar.keySet()) {
-            calculateFollow(nonTerminal, grammar, firstSets, followSets);
-        }
-
-        return followSets;
-    }
 
     private void calculateFollow(String symbol, Map<String, List<String>> grammar, Map<String, Set<String>> firstSets, Map<String, Set<String>> followSets) {
         for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
@@ -110,10 +195,10 @@ public class GrammarParserServlet extends HttpServlet {
                             Set<String> firstOfNext = calculateFirst(nextSymbol, grammar, firstSets);
                             followSets.computeIfAbsent(symbol, k -> new HashSet<>()).addAll(firstOfNext);
                             if (firstOfNext.contains("ε")) {
-                                followSets.get(symbol).addAll(followSets.getOrDefault(nonTerminal, new HashSet<>()));
+                                followSets.computeIfAbsent(symbol, k -> new HashSet<>()).addAll(followSets.getOrDefault(nonTerminal, new HashSet<>()));
                             }
                         } else {
-                            followSets.get(symbol).addAll(followSets.getOrDefault(nonTerminal, new HashSet<>()));
+                            followSets.computeIfAbsent(symbol, k -> new HashSet<>()).addAll(followSets.getOrDefault(nonTerminal, new HashSet<>()));
                         }
                     }
                 }
@@ -146,16 +231,4 @@ public class GrammarParserServlet extends HttpServlet {
         return parsingTable;
     }
 
-    private Set<String> calculateFirstOfProduction(String production, Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
-        Set<String> first = new HashSet<>();
-        String[] symbols = production.split("\\s+");
-        for (String symbol : symbols) {
-            Set<String> firstOfSymbol = calculateFirst(symbol, grammar, firstSets);
-            first.addAll(firstOfSymbol);
-            if (!firstOfSymbol.contains("ε")) {
-                break;
-            }
-        }
-        return first;
-    }
 }
