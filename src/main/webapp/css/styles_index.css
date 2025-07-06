@@ -1,0 +1,128 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+    margin: 0;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Contenedor principal para centrar el contenido */
+.container {
+    width: 100%;
+    max-width: 700px;
+    text-align: center;
+}
+
+/* Título principal */
+h1 {
+    font-size: 2.5em;
+    color: #0056b3;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* Subtítulo */
+p.subtitle {
+    font-size: 1.2em;
+    color: #6c757d;
+    margin-bottom: 40px;
+}
+
+/* Estilo del formulario como una tarjeta */
+form {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    margin-bottom: 30px;
+}
+
+label {
+    font-weight: 600;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 12px;
+    color: #495057;
+}
+
+/* Área de texto para la gramática */
+textarea {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: vertical;
+    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Botón de envío */
+.submit-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+input[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+input[type="submit"]:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+/* Sección de ejemplo */
+.example-card {
+    background: #e9ecef;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.example-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.example-card pre {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    white-space: pre-wrap; /* Permite que el texto se ajuste si es necesario */
+    font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    border: 1px solid #ced4da;
+}
+
+.example-card p {
+    margin-top: 15px;
+    margin-bottom: 0;
+    color: #6c757d;
+}
