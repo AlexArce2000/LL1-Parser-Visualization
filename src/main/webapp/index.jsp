@@ -1,88 +1,41 @@
-<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrada de Gram�tica LL(1)</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        h1 {
-            color: #444;
-        }
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 8px;
-        }
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-            resize: vertical;
-        }
-        input[type="submit"] {
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        input[type="submit"]:hover {
-            background-color: #218838;
-        }
-        .example {
-            margin-top: 20px;
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 4px;
-        }
-        .example h3 {
-            margin-top: 0;
-        }
-        .example pre {
-            margin: 0;
-        }
-    </style>
+    <title>Analizador de Gramáticas LL(1)</title>
+    <link rel="icon" href="assets/LL1.jpg" type="image/jpeg">
+    <link rel="stylesheet" href="css/styles_index.css">
 </head>
 <body>
-<h1>Ingrese la Gram�tica LL(1)</h1>
-<form action="parseGrammar" method="post">
-    <label for="productions">Producciones (una por l�nea):</label><br>
-    <textarea id="productions" name="productions" rows="10" cols="50" required></textarea><br><br>
 
-    <input type="submit" value="Analizar">
-</form>
+<div class="container">
+    <h1>Analizador de Gramáticas LL(1)</h1>
+    <p class="subtitle">Introduce tu gramática, una producción por línea, y obtén los conjuntos First, Follow y la tabla de análisis.</p>
 
-<div class="example">
-    <h3>Ejemplo de gram�tica LL(1):</h3>
-    <pre>
-E  -> T E'
-E' -> + T E' | ?
-T  -> F T'
-T' -> * F T' | ?
-F  -> ( E ) | id
-        </pre>
-    <p><strong>Nota:</strong> Usa "?" para representar la producci�n vac�a.</p>
+    <form action="parseGrammar" method="post">
+        <label for="productions">Definición de la Gramática:</label>
+        <textarea id="productions" name="productions" rows="10" placeholder="E -> T E'
+E' -> + T E' | ε
+..." required></textarea>
+
+        <div class="submit-container">
+            <input type="submit" value="Analizar Gramática">
+        </div>
+    </form>
+
+    <div class="example-card">
+        <h3>Ejemplo de formato:</h3>
+        <pre>
+E -> T E'
+E' -> + T E' | ε
+T -> F T'
+T' -> * F T' | ε
+F -> ( E ) | id</pre>
+        <p><strong>Nota:</strong> Usa "ε" (o déjalo en blanco después de "|") para representar la producción vacía (epsilon). El símbolo "?" también es aceptado.</p>
+    </div>
 </div>
+
 </body>
 </html>

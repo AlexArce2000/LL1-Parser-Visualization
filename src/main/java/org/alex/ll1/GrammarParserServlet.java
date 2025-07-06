@@ -9,35 +9,36 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 
-
 @WebServlet("/parseGrammar")
 public class GrammarParserServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Obtener las producciones del formulario
         String productionsInput = request.getParameter("productions");
+        if (productionsInput == null) {
+            productionsInput = "";
+        }
         String[] productions = productionsInput.split("\n");
 
-        // Parsear la gramática
+        // parseGrammar ahora devuelve un LinkedHashMap para mantener el orden de los no-terminales.
         Map<String, List<String>> grammar = parseGrammar(productions);
 
-        // Calcular First y Follow
-        Map<String, Set<String>> firstSets = calculateFirstSets(grammar);
-        Map<String, Set<String>> followSets = calculateFollowSets(grammar, firstSets);
+        String startSymbol = grammar.keySet().stream().findFirst().orElse(null);
 
-        // Calcular la tabla de análisis LL(1)
+        Map<String, Set<String>> firstSets = calculateFirstSets(grammar);
+        Map<String, Set<String>> followSets = calculateFollowSets(grammar, firstSets, startSymbol);
         Map<String, Map<String, String>> parsingTable = calculateParsingTable(grammar, firstSets, followSets);
 
-        // Establecer los resultados como atributos de la solicitud
         request.setAttribute("grammar", grammar);
         request.setAttribute("firstSets", firstSets);
         request.setAttribute("followSets", followSets);
         request.setAttribute("parsingTable", parsingTable);
 
-        // Redirigir a la página de resultados
         request.getRequestDispatcher("/result.jsp").forward(request, response);
     }
+
     private Map<String, List<String>> parseGrammar(String[] productions) {
+        // CAMBIO: Usar LinkedHashMap para preservar el orden de inserción de las reglas.
+        // El primer no-terminal insertado será el primero al iterar.
         Map<String, List<String>> grammar = new LinkedHashMap<>();
 
         for (String production : productions) {
@@ -49,27 +50,23 @@ public class GrammarParserServlet extends HttpServlet {
             String nonTerminal = parts[0].trim();
             String[] alternatives = parts[1].split("\\|");
 
-            List<String> productionRules = new ArrayList<>();
+            grammar.putIfAbsent(nonTerminal, new ArrayList<>());
+
             for (String alternative : alternatives) {
                 String trimmed = alternative.trim();
-                // Manejar explícitamente el caso de producciones vacías
-                if (trimmed.isEmpty()) {
-                    productionRules.add("ε");
+                // Normalizamos las representaciones de epsilon a 'ε'
+                if (trimmed.isEmpty() || trimmed.equalsIgnoreCase("epsilon") || trimmed.equals("ε") || trimmed.equals("?")) {
+                    grammar.get(nonTerminal).add("ε");
                 } else {
-                    productionRules.add(trimmed);
+                    grammar.get(nonTerminal).add(trimmed);
                 }
             }
-
-            grammar.put(nonTerminal, productionRules);
         }
-
         return grammar;
     }
 
     private Map<String, Set<String>> calculateFirstSets(Map<String, List<String>> grammar) {
-        Map<String, Set<String>> firstSets = new HashMap<>();
-
-        // Inicializar conjuntos FIRST para todos los no terminales
+        Map<String, Set<String>> firstSets = new LinkedHashMap<>();
         for (String nonTerminal : grammar.keySet()) {
             firstSets.put(nonTerminal, new HashSet<>());
         }
@@ -77,203 +74,114 @@ public class GrammarParserServlet extends HttpServlet {
         boolean changed = true;
         while (changed) {
             changed = false;
-
             for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
                 String nonTerminal = entry.getKey();
                 List<String> productions = entry.getValue();
+                Set<String> currentFirstSet = firstSets.get(nonTerminal);
+                int originalSize = currentFirstSet.size();
 
                 for (String production : productions) {
-                    // Caso especial para ε
-                    if (production.equals("ε")) {
-                        if (firstSets.get(nonTerminal).add("ε")) {
-                            changed = true;
-                        }
-                        continue;
-                    }
+                    Set<String> firstOfProduction = calculateFirstOfProduction(production, grammar, firstSets);
+                    currentFirstSet.addAll(firstOfProduction);
+                }
 
-                    String[] symbols = production.split("\\s+");
-                    boolean allDeriveEmpty = true;
-
-                    for (int i = 0; i < symbols.length; i++) {
-                        String symbol = symbols[i];
-
-                        if (!grammar.containsKey(symbol)) {
-                            // Terminal - añadirlo al conjunto FIRST
-                            if (firstSets.get(nonTerminal).add(symbol)) {
-                                changed = true;
-                            }
-                            allDeriveEmpty = false;
-                            break;
-                        } else {
-                            // No terminal - añadir todos sus FIRST excepto ε
-                            boolean hasEpsilon = false;
-                            for (String first : firstSets.get(symbol)) {
-                                if (first.equals("ε")) {
-                                    hasEpsilon = true;
-                                } else if (firstSets.get(nonTerminal).add(first)) {
-                                    changed = true;
-                                }
-                            }
-
-                            // Si este símbolo no puede derivar ε, no continuar
-                            if (!hasEpsilon) {
-                                allDeriveEmpty = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    // Si todos los símbolos pueden derivar ε, añadir ε al conjunto FIRST
-                    if (allDeriveEmpty && symbols.length > 0) {
-                        if (firstSets.get(nonTerminal).add("ε")) {
-                            changed = true;
-                        }
-                    }
+                if (currentFirstSet.size() > originalSize) {
+                    changed = true;
                 }
             }
         }
-
         return firstSets;
     }
 
-    private Map<String, Set<String>> calculateFollowSets(Map<String, List<String>> grammar, Map<String, Set<String>> firstSets) {
-        Map<String, Set<String>> followSets = new HashMap<>();
-
-        // Inicializar conjuntos FOLLOW para todos los no terminales
+    private Map<String, Set<String>> calculateFollowSets(Map<String, List<String>> grammar, Map<String, Set<String>> firstSets, String startSymbol) {
+        Map<String, Set<String>> followSets = new LinkedHashMap<>();
         for (String nonTerminal : grammar.keySet()) {
             followSets.put(nonTerminal, new HashSet<>());
         }
 
-        // Añadir $ al FOLLOW del símbolo inicial (primera producción)
-        String startSymbol = grammar.keySet().iterator().next();
-        followSets.get(startSymbol).add("$");
+        if (startSymbol != null) {
+            followSets.get(startSymbol).add("$");
+        }
 
         boolean changed = true;
         while (changed) {
             changed = false;
-
+            // Iterar sobre cada producción A -> α
             for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
-                String nonTerminal = entry.getKey();
-                List<String> productions = entry.getValue();
-
-                for (String production : productions) {
-                    if (production.equals("ε")) continue; // Ignorar producciones ε
-
+                String nonTerminalA = entry.getKey();
+                for (String production : entry.getValue()) {
+                    if (production.equals("ε")) continue;
                     String[] symbols = production.split("\\s+");
 
+                    // Para cada símbolo B en la producción A -> αBβ
                     for (int i = 0; i < symbols.length; i++) {
-                        String symbol = symbols[i];
+                        String symbolB = symbols[i];
+                        if (!grammar.containsKey(symbolB)) continue;
 
-                        // Solo nos interesan los no terminales para FOLLOW
-                        if (!grammar.containsKey(symbol)) continue;
+                        Set<String> followB = followSets.get(symbolB);
+                        int originalSize = followB.size();
 
-                        // Calcular los símbolos que siguen a este no terminal
-                        if (i < symbols.length - 1) {
-                            // Hay símbolos después de este
-                            int j = i + 1;
-                            boolean canBeEmpty = true;
+                        // β es el resto de la cadena después de B
+                        String betaString = String.join(" ", Arrays.copyOfRange(symbols, i + 1, symbols.length));
+                        Set<String> firstOfBeta = calculateFirstOfProduction(betaString, grammar, firstSets);
 
-                            while (j < symbols.length && canBeEmpty) {
-                                String nextSymbol = symbols[j];
-
-                                if (!grammar.containsKey(nextSymbol)) {
-                                    // Si es un terminal, añadirlo al FOLLOW
-                                    if (followSets.get(symbol).add(nextSymbol)) {
-                                        changed = true;
-                                    }
-                                    canBeEmpty = false;
-                                } else {
-                                    // Si es un no terminal, añadir sus FIRST excepto ε
-                                    boolean hasEpsilon = false;
-                                    for (String first : firstSets.get(nextSymbol)) {
-                                        if (first.equals("ε")) {
-                                            hasEpsilon = true;
-                                        } else if (followSets.get(symbol).add(first)) {
-                                            changed = true;
-                                        }
-                                    }
-
-                                    if (!hasEpsilon) {
-                                        canBeEmpty = false;
-                                    }
-                                }
-                                j++;
+                        // **** ESTA ES LA LÓGICA CLAVE ****
+                        // Regla 2: Añadir FIRST(β) - {ε} a FOLLOW(B)
+                        for(String s : firstOfBeta) {
+                            if (!s.equals("ε")) {
+                                followB.add(s);
                             }
+                        }
 
-                            // Si todos los símbolos posteriores pueden derivar ε, añadir FOLLOW(nonTerminal)
-                            if (canBeEmpty) {
-                                if (followSets.get(symbol).addAll(followSets.get(nonTerminal))) {
-                                    changed = true;
-                                }
-                            }
-                        } else {
-                            // Es el último símbolo, añadir FOLLOW(nonTerminal)
-                            if (followSets.get(symbol).addAll(followSets.get(nonTerminal))) {
-                                changed = true;
-                            }
+                        // Regla 3: Si ε está en FIRST(β) (o β es vacío), añadir FOLLOW(A) a FOLLOW(B)
+                        if (firstOfBeta.contains("ε") || betaString.isEmpty()) {
+                            followB.addAll(followSets.get(nonTerminalA));
+                        }
+                        // **** FIN DE LA LÓGICA CLAVE ****
+
+                        if (followB.size() > originalSize) {
+                            changed = true;
                         }
                     }
                 }
             }
         }
-
         return followSets;
     }
-
     private Map<String, Map<String, String>> calculateParsingTable(Map<String, List<String>> grammar,
                                                                    Map<String, Set<String>> firstSets,
                                                                    Map<String, Set<String>> followSets) {
-        Map<String, Map<String, String>> parsingTable = new HashMap<>();
-
-        // Inicializar la tabla de análisis
+        Map<String, Map<String, String>> parsingTable = new LinkedHashMap<>();
         for (String nonTerminal : grammar.keySet()) {
-            parsingTable.put(nonTerminal, new HashMap<>());
+            parsingTable.put(nonTerminal, new LinkedHashMap<>());
         }
 
-        // Llenar la tabla de análisis
         for (Map.Entry<String, List<String>> entry : grammar.entrySet()) {
-            String nonTerminal = entry.getKey();
+            String nonTerminalA = entry.getKey();
             List<String> productions = entry.getValue();
 
-            for (int i = 0; i < productions.size(); i++) {
-                String production = productions.get(i);
+            for (String productionAlpha : productions) {
+                Set<String> firstOfAlpha = calculateFirstOfProduction(productionAlpha, grammar, firstSets);
 
-                if (production.equals("ε")) {
-                    // Regla 2: Si A -> ε es una producción, entonces para cada terminal a en FOLLOW(A),
-                    // añadir A -> ε a la tabla M[A,a]
-                    for (String terminal : followSets.get(nonTerminal)) {
-                        String existingProduction = parsingTable.get(nonTerminal).get(terminal);
-                        if (existingProduction != null && !existingProduction.equals("ε")) {
-                            System.out.println("Conflicto en la tabla LL(1): " + nonTerminal + ", " + terminal);
+                for (String terminal : firstOfAlpha) {
+                    if (!terminal.equals("ε")) {
+                        if (parsingTable.get(nonTerminalA).containsKey(terminal)) {
+                            System.err.println("Conflicto LL(1) en [" + nonTerminalA + ", " + terminal + "]. Gramática no es LL(1).");
                         }
-                        parsingTable.get(nonTerminal).put(terminal, "ε");
+                        parsingTable.get(nonTerminalA).put(terminal, productionAlpha);
                     }
-                } else {
-                    // Regla 1: Si A -> α es una producción y a está en FIRST(α), añadir A -> α a la tabla M[A,a]
-                    Set<String> firstOfProduction = calculateFirstOfProduction(production, grammar, firstSets);
+                }
 
-                    for (String terminal : firstOfProduction) {
-                        if (!terminal.equals("ε")) {
-                            String existingProduction = parsingTable.get(nonTerminal).get(terminal);
-                            if (existingProduction != null && !existingProduction.equals(production)) {
-                                System.out.println("Conflicto en la tabla LL(1): " + nonTerminal + ", " + terminal);
-                            }
-                            parsingTable.get(nonTerminal).put(terminal, production);
-                        } else {
-                            // Si ε está en FIRST(α), entonces para cada b en FOLLOW(A), añadir A -> α a M[A,b]
-                            for (String followTerminal : followSets.get(nonTerminal)) {
-                                String existingProduction = parsingTable.get(nonTerminal).get(followTerminal);
-                                if (existingProduction != null && !existingProduction.equals(production)) {
-                                    System.out.println("Conflicto en la tabla LL(1): " + nonTerminal + ", " + followTerminal);
-                                }
-                                parsingTable.get(nonTerminal).put(followTerminal, production);
-                            }
+                if (firstOfAlpha.contains("ε")) {
+                    for (String terminal : followSets.get(nonTerminalA)) {
+                        if (parsingTable.get(nonTerminalA).containsKey(terminal)) {
+                            System.err.println("Conflicto LL(1) en [" + nonTerminalA + ", " + terminal + "]. Gramática no es LL(1).");
                         }
+                        parsingTable.get(nonTerminalA).put(terminal, productionAlpha);
                     }
                 }
             }
         }
-
         return parsingTable;
     }
 
@@ -281,47 +189,45 @@ public class GrammarParserServlet extends HttpServlet {
                                                    Map<String, Set<String>> firstSets) {
         Set<String> result = new HashSet<>();
 
+        if (production == null || production.trim().isEmpty()){
+            result.add("ε");
+            return result;
+        }
+
         if (production.equals("ε")) {
             result.add("ε");
             return result;
         }
 
         String[] symbols = production.split("\\s+");
-        boolean allDeriveEmpty = true;
+        boolean allPreviousCanBeEpsilon = true;
 
-        for (int i = 0; i < symbols.length; i++) {
-            String symbol = symbols[i];
+        for (String symbol : symbols) {
+            if (!allPreviousCanBeEpsilon) break;
 
             if (!grammar.containsKey(symbol)) {
-                // Si es un terminal, solo añadir el terminal y terminar
                 result.add(symbol);
-                allDeriveEmpty = false;
-                break;
+                allPreviousCanBeEpsilon = false;
             } else {
-                // Si es un no terminal, añadir todos sus FIRST excepto ε
+                Set<String> firstOfSymbol = firstSets.get(symbol);
                 boolean hasEpsilon = false;
-                for (String first : firstSets.get(symbol)) {
+                for (String first : firstOfSymbol) {
                     if (first.equals("ε")) {
                         hasEpsilon = true;
                     } else {
                         result.add(first);
                     }
                 }
-
-                // Si este símbolo no puede derivar ε, no continuar
                 if (!hasEpsilon) {
-                    allDeriveEmpty = false;
-                    break;
+                    allPreviousCanBeEpsilon = false;
                 }
             }
         }
 
-        // Si todos los símbolos pueden derivar ε, añadir ε al resultado
-        if (allDeriveEmpty) {
+        if (allPreviousCanBeEpsilon) {
             result.add("ε");
         }
 
         return result;
     }
-
 }
