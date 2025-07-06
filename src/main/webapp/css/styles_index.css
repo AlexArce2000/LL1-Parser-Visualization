@@ -1,3 +1,8 @@
+@font-face {
+    font-family: 'MiFuente';
+    src: url('../assets/ComicMono.ttf') format('truetype');
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: #f8f9fa;
@@ -11,7 +16,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Contenedor principal para centrar el contenido */
 .container {
     width: 100%;
     max-width: 700px;
@@ -20,6 +24,7 @@ body {
 
 /* Título principal */
 h1 {
+    font-family: 'MiFuente', Arial, sans-serif;
     font-size: 2.5em;
     color: #0056b3;
     margin-bottom: 10px;
@@ -51,7 +56,6 @@ label {
     color: #495057;
 }
 
-/* Área de texto para la gramática */
 textarea {
     width: 100%;
     padding: 15px;
@@ -61,7 +65,7 @@ textarea {
     font-size: 16px;
     line-height: 1.5;
     resize: vertical;
-    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+    box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -71,7 +75,6 @@ textarea:focus {
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Botón de envío */
 .submit-container {
     text-align: center;
     margin-top: 20px;
@@ -94,7 +97,6 @@ input[type="submit"]:hover {
     transform: translateY(-2px);
 }
 
-/* Sección de ejemplo */
 .example-card {
     background: #e9ecef;
     padding: 25px;
@@ -114,7 +116,7 @@ input[type="submit"]:hover {
     background-color: #fff;
     padding: 15px;
     border-radius: 8px;
-    white-space: pre-wrap; /* Permite que el texto se ajuste si es necesario */
+    white-space: pre-wrap;
     font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
     font-size: 15px;
     line-height: 1.6;

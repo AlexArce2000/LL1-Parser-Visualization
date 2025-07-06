@@ -40,35 +40,34 @@
         </div>
 
         <div class="card">
-            <h2>Conjuntos First</h2>
-            <ul class="set-list">
+            <h2>Conjuntos First y Follow</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>No Terminal</th>
+                    <th>First</th>
+                    <th>Follow</th>
+                </tr>
+                </thead>
+                <tbody>
                 <%
-                    for (Map.Entry<String, Set<String>> entry : firstSets.entrySet()) {
-                        SortedSet<String> sortedFirst = new TreeSet<>(entry.getValue());
-                %>
-                <li>
-                    <strong>First(<%= entry.getKey() %>)</strong> = { <span class="code"><%= String.join(", ", sortedFirst) %></span> }
-                </li>
-                <%
-                    }
-                %>
-            </ul>
-        </div>
+                    for (String nonTerminal : grammar.keySet()) {
+                        Set<String> firstSet = firstSets.get(nonTerminal);
+                        Set<String> followSet = followSets.get(nonTerminal);
 
-        <div class="card">
-            <h2>Conjuntos Follow</h2>
-            <ul class="set-list">
-                <%
-                    for (Map.Entry<String, Set<String>> entry : followSets.entrySet()) {
-                        SortedSet<String> sortedFollow = new TreeSet<>(entry.getValue());
+                        SortedSet<String> sortedFirst = new TreeSet<>(firstSet);
+                        SortedSet<String> sortedFollow = new TreeSet<>(followSet);
                 %>
-                <li>
-                    <strong>Follow(<%= entry.getKey() %>)</strong> = { <span class="code"><%= String.join(", ", sortedFollow) %></span> }
-                </li>
+                <tr>
+                    <td><strong><%= nonTerminal %></strong></td>
+                    <td>{ <span class="code"><%= String.join(", ", sortedFirst) %></span> }</td>
+                    <td>{ <span class="code"><%= String.join(", ", sortedFollow) %></span> }</td>
+                </tr>
                 <%
                     }
                 %>
-            </ul>
+                </tbody>
+            </table>
         </div>
     </div>
 
