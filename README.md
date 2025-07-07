@@ -1,4 +1,4 @@
-# Analizador de Gramáticas LL(1) 
+# LL(1) Parser Visualization
 
 Una aplicación web desarrollada en Java Servlets y JSP que permite analizar gramáticas LL(1) de forma interactiva. El usuario puede introducir una gramática y la aplicación calculará y mostrará automáticamente los conjuntos **First** y **Follow** para cada no-terminal, además de generar la **Tabla de Análisis LL(1)** correspondiente.
 
