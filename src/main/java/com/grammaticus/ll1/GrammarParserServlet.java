@@ -1,4 +1,4 @@
-package org.alex.ll1;
+package com.grammaticus.ll1;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -70,7 +70,6 @@ public class GrammarParserServlet extends HttpServlet {
                 int originalSize = currentFirstSet.size();
 
                 for (String production : entry.getValue()) {
-                    // La clave es usar la función auxiliar, que es robusta.
                     Set<String> firstOfProduction = calculateFirstOfProduction(production, grammar, firstSets);
                     currentFirstSet.addAll(firstOfProduction);
                 }

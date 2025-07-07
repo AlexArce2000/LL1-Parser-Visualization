@@ -7,6 +7,7 @@
     <title>Análisis LL(1) - Resultados</title>
     <link rel="icon" href="assets/LL1.jpg" type="image/jpeg">
     <link rel="stylesheet" href="css/styles_results.css">
+
 </head>
 <body>
 
@@ -17,10 +18,12 @@
     Map<String, Map<String, String>> parsingTable = (Map<String, Map<String, String>>) request.getAttribute("parsingTable");
 %>
 
-<h1>Resultados del Análisis LL(1)</h1>
+<div class="header-container">
+    <h1>Resultados del Análisis LL(1)</h1>
+    <a href="index.jsp" class="back-button">Analizar Otra Gramática</a>
+</div>
 
 <div class="main-container">
-
     <div class="left-column">
         <div class="card">
             <h2>Gramática</h2>
